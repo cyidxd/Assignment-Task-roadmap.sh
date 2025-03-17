@@ -1,159 +1,113 @@
 import json
 import os
-import time
+import sys
+from datetime import datetime
 
-# Nama file JSON
-FILE_NAME = "data.json"
+# Name of the JSON file
+FILE_NAME = "tasks.json"
 
-# Fungsi untuk membersihkan layar
-def clear_screen():
-    os.system("cls" if os.name == "nt" else "clear")
+# Ensure the JSON file exists or create it if it doesn't
+def initialize_json_file():
+    if not os.path.exists(FILE_NAME):
+        with open(FILE_NAME, "w") as file:
+            json.dump({"tasks": []}, file, indent=4)
 
-# Fungsi untuk membaca file JSON
+# Read data from JSON file
 def read_json_file():
-    try:
-        with open(FILE_NAME, "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return {"Assignment": {}}  # Jika file tidak ditemukan, buat struktur awal
-    except json.JSONDecodeError:
-        return {"Assignment": {}}  # Jika file kosong atau rusak
+    with open(FILE_NAME, "r") as file:
+        return json.load(file)
 
-# Fungsi untuk menulis ke file JSON
+# Write data to JSON file
 def write_json_file(data):
     with open(FILE_NAME, "w") as file:
         json.dump(data, file, indent=4)
 
-# Menu utama
-def menu():
-    clear_screen()  # Membersihkan layar sebelum menampilkan menu
-    print("\nLoading menu...")
-    time.sleep(0.5)  # Animasi kecil
-    print("1. Add Assignment\n2. Remove Assignment\n3. View Assignments\n4. Update Assignment Status\n5. Exit\n")
-    askmenu = input("Enter your choice: ")
-    if askmenu == "1":
-        add_assignment()
-    elif askmenu == "2":
-        remove_assignment()
-    elif askmenu == "3":
-        view_assignments()
-    elif askmenu == "4":
-        update_assignment_status()
-    elif askmenu == "5":
-        exit()
-    else:
-        print("Invalid input. Please try again.")
-        time.sleep(1)
-        menu()
-
-# Menambahkan tugas baru
-def add_assignment():
-    clear_screen()  # Membersihkan layar sebelum menambahkan tugas
-    print("\nPreparing to add assignment...")
-    time.sleep(0.5)
-    assignment = input("Enter assignment: ")
-    due_date = input("Enter due date: ")
-    status = "sedang dikerjakan"  # Status default saat tugas dibuat
-
-    # Baca data lama dari file
+# Add a new task
+def add_task(description):
     data = read_json_file()
-
-    # Tambahkan tugas baru ke Assignment
-    task_id = f"Task {len(data['Assignment']) + 1}"  # ID untuk tugas baru
-    data["Assignment"][task_id] = {
-        "assignment": assignment,
-        "due_date": due_date,
-        "status": status
+    created_at = updated_at = datetime.now().isoformat()
+    task_id = len(data["tasks"]) + 1
+    new_task = {
+        "id": task_id,
+        "description": description,
+        "status": "todo",
+        "createdAt": created_at,
+        "updatedAt": updated_at
     }
-
-    # Simpan data ke file
+    data["tasks"].append(new_task)
     write_json_file(data)
+    print(f"Task added: {description}")
 
-    print("Adding assignment...")
-    time.sleep(0.5)
-    print("Assignment added.")
-    time.sleep(1)
-    menu()
-
-# Menghapus tugas
-def remove_assignment():
-    clear_screen()  # Membersihkan layar sebelum menghapus tugas
-    print("\nPreparing to remove an assignment...")
-    time.sleep(0.5)
-    print("List Assignments:")
+# Update the status of a task
+def update_task(task_id, new_status):
+    if new_status not in ["todo", "in-progress", "done"]:
+        print("Invalid status. Use 'todo', 'in-progress', or 'done'.")
+        return
     data = read_json_file()
-
-    if not data["Assignment"]:
-        print("No assignments found.")
-    else:
-        for task_id, details in data["Assignment"].items():
-            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']}, Status: {details['status']})")
-    
-    task_id = input("Enter Task ID to remove (e.g., Task 1): ")
-
-    # Hapus tugas jika ada
-    if task_id in data["Assignment"]:
-        print(f"Removing {task_id}...")
-        time.sleep(0.5)
-        del data["Assignment"][task_id]
-        write_json_file(data)
-        print(f"{task_id} removed.")
-    else:
-        print("Task not found.")
-
-    time.sleep(1)
-    menu()
-
-# Melihat daftar tugas
-def view_assignments():
-    clear_screen()  # Membersihkan layar sebelum menampilkan daftar tugas
-    print("\nLoading assignments...")
-    time.sleep(0.5)
-    data = read_json_file()
-
-    if not data["Assignment"]:
-        print("No assignments found.")
-    else:
-        for task_id, details in data["Assignment"].items():
-            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']}, Status: {details['status']})")
-
-    input("\nPress Enter to return to menu...")
-    menu()
-
-# Memperbarui status tugas
-def update_assignment_status():
-    clear_screen()  # Membersihkan layar sebelum memperbarui status
-    print("\nUpdating assignment status...")
-    time.sleep(0.5)
-    data = read_json_file()
-
-    if not data["Assignment"]:
-        print("No assignments found.")
-    else:
-        for task_id, details in data["Assignment"].items():
-            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']}, Status: {details['status']})")
-
-        task_id = input("Enter Task ID to update (e.g., Task 1): ")
-
-        if task_id in data["Assignment"]:
-            print(f"Current Status: {data['Assignment'][task_id]['status']}")
-            new_status = input("Enter new status (e.g., sedang dikerjakan/sudah dikerjakan): ")
-            data["Assignment"][task_id]["status"] = new_status
+    for task in data["tasks"]:
+        if task["id"] == task_id:
+            task["status"] = new_status
+            task["updatedAt"] = datetime.now().isoformat()
             write_json_file(data)
-            print(f"Status for {task_id} updated to '{new_status}'.")
-        else:
-            print("Task not found.")
+            print(f"Task {task_id} updated to status '{new_status}'.")
+            return
+    print(f"Task with ID {task_id} not found.")
 
-    time.sleep(1)
-    menu()
+# Delete a task
+def delete_task(task_id):
+    data = read_json_file()
+    for task in data["tasks"]:
+        if task["id"] == task_id:
+            data["tasks"].remove(task)
+            write_json_file(data)
+            print(f"Task {task_id} deleted.")
+            return
+    print(f"Task with ID {task_id} not found.")
 
-# Fungsi keluar
-def exit():
-    clear_screen()  # Membersihkan layar saat keluar
-    print("\nExiting the program...")
-    time.sleep(0.5)
-    print("Goodbye!")
-    quit()
+# List tasks based on a filter
+def list_tasks(filter_status=None):
+    data = read_json_file()
+    tasks = data["tasks"]
+    if filter_status:
+        tasks = [task for task in tasks if task["status"] == filter_status]
+    if not tasks:
+        print("No tasks found.")
+        return
+    for task in tasks:
+        print(f"ID: {task['id']} | Description: {task['description']} | "
+              f"Status: {task['status']} | CreatedAt: {task['createdAt']} | "
+              f"UpdatedAt: {task['updatedAt']}")
 
-# Jalankan menu utama
-menu()
+# Command-line interface
+def main():
+    initialize_json_file()
+    if len(sys.argv) < 2:
+        print("Usage: python task_manager.py <command> [<args>]")
+        return
+
+    command = sys.argv[1]
+
+    if command == "add":
+        if len(sys.argv) < 3:
+            print("Usage: python task_manager.py add <description>")
+            return
+        description = " ".join(sys.argv[2:])
+        add_task(description)
+
+    elif command == "update":
+        if len(sys.argv) < 4:
+            print("Usage: python task_manager.py update <task_id> <status>")
+            return
+        try:
+            task_id = int(sys.argv[2])
+        except ValueError:
+            print("Task ID must be an integer.")
+            return
+        new_status = sys.argv[3]
+        update_task(task_id, new_status)
+
+    elif command == "delete":
+        if len(sys.argv) < 3:
+            print("Usage: python task_manager.py delete <task_id>")
+            return
+        try:
