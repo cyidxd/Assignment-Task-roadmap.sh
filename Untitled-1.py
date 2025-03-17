@@ -29,7 +29,7 @@ def menu():
     clear_screen()  # Membersihkan layar sebelum menampilkan menu
     print("\nLoading menu...")
     time.sleep(0.5)  # Animasi kecil
-    print("1. Add Assignment\n2. Remove Assignment\n3. View Assignments\n4. Exit\n")
+    print("1. Add Assignment\n2. Remove Assignment\n3. View Assignments\n4. Update Assignment Status\n5. Exit\n")
     askmenu = input("Enter your choice: ")
     if askmenu == "1":
         add_assignment()
@@ -38,6 +38,8 @@ def menu():
     elif askmenu == "3":
         view_assignments()
     elif askmenu == "4":
+        update_assignment_status()
+    elif askmenu == "5":
         exit()
     else:
         print("Invalid input. Please try again.")
@@ -51,6 +53,7 @@ def add_assignment():
     time.sleep(0.5)
     assignment = input("Enter assignment: ")
     due_date = input("Enter due date: ")
+    status = "sedang dikerjakan"  # Status default saat tugas dibuat
 
     # Baca data lama dari file
     data = read_json_file()
@@ -59,7 +62,8 @@ def add_assignment():
     task_id = f"Task {len(data['Assignment']) + 1}"  # ID untuk tugas baru
     data["Assignment"][task_id] = {
         "assignment": assignment,
-        "due_date": due_date
+        "due_date": due_date,
+        "status": status
     }
 
     # Simpan data ke file
@@ -83,7 +87,7 @@ def remove_assignment():
         print("No assignments found.")
     else:
         for task_id, details in data["Assignment"].items():
-            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']})")
+            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']}, Status: {details['status']})")
     
     task_id = input("Enter Task ID to remove (e.g., Task 1): ")
 
@@ -111,9 +115,36 @@ def view_assignments():
         print("No assignments found.")
     else:
         for task_id, details in data["Assignment"].items():
-            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']})")
+            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']}, Status: {details['status']})")
 
     input("\nPress Enter to return to menu...")
+    menu()
+
+# Memperbarui status tugas
+def update_assignment_status():
+    clear_screen()  # Membersihkan layar sebelum memperbarui status
+    print("\nUpdating assignment status...")
+    time.sleep(0.5)
+    data = read_json_file()
+
+    if not data["Assignment"]:
+        print("No assignments found.")
+    else:
+        for task_id, details in data["Assignment"].items():
+            print(f"{task_id}: {details['assignment']} (Due Date: {details['due_date']}, Status: {details['status']})")
+
+        task_id = input("Enter Task ID to update (e.g., Task 1): ")
+
+        if task_id in data["Assignment"]:
+            print(f"Current Status: {data['Assignment'][task_id]['status']}")
+            new_status = input("Enter new status (e.g., sedang dikerjakan/sudah dikerjakan): ")
+            data["Assignment"][task_id]["status"] = new_status
+            write_json_file(data)
+            print(f"Status for {task_id} updated to '{new_status}'.")
+        else:
+            print("Task not found.")
+
+    time.sleep(1)
     menu()
 
 # Fungsi keluar
